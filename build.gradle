@@ -1,0 +1,89 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm' version '2.4.0'
+    id 'java-library'
+    id 'maven-publish'
+    id 'signing'
+}
+
+group = 'app.torbox'
+version = '9.3.2026112508'
+
+repositories {
+    mavenCentral()
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+    withSourcesJar()
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
+}
+
+dependencies {
+    api 'com.squareup.okhttp3:okhttp:5.4.0'
+    api 'com.google.code.gson:gson:2.14.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.14.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+tasks.register('apiDocumentationJar', Jar) {
+    archiveClassifier = 'javadoc'
+    from 'docs'
+    from 'README.md'
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            artifactId = 'torbox-sdk'
+            from components.java
+            artifact tasks.named('apiDocumentationJar')
+
+            pom {
+                name = 'TorBox Kotlin SDK'
+                description = 'Kotlin/JVM client for the TorBox API'
+                url = 'https://api-docs.torbox.app'
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url = 'https://opensource.org/license/mit'
+                    }
+                }
+                developers {
+                    developer {
+                        name = 'TorBox'
+                        email = 'contact@torbox.app'
+                    }
+                }
+                scm {
+                    url = 'https://github.com/TorBox-App/torbox-sdk-kotlin'
+                    connection = 'scm:git:https://github.com/TorBox-App/torbox-sdk-kotlin.git'
+                }
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            name = 'Bundle'
+            url = layout.buildDirectory.dir('central')
+        }
+    }
+}
+
+def signingKey = providers.environmentVariable('MAVEN_SIGNING_KEY')
+if (signingKey.isPresent()) {
+    signing {
+        useInMemoryPgpKeys(signingKey.get(), providers.environmentVariable('MAVEN_SIGNING_PASSWORD').orNull)
+        sign publishing.publications.maven
+    }
+}
